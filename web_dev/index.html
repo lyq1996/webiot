@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+	<meta http-equiv='X-UA-Compatible' content='IE=edge'>
+ 	<meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'>
+	<meta charset='UTF-8'>
+	<title>首页-物联网云平台，让你与设备的沟通更方便</title>
+	<link rel='stylesheet' href='https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css' integrity='sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u' crossorigin='anonymous'>
+	<link rel="stylesheet" type="text/css" href="http://www.bootcss.com/p/bootstrap-switch/static/stylesheets/bootstrapSwitch.css">
+	
+	<style type='text/css'>
+		.no-padding-right {
+			padding-right: 0 !important;
+		}
+		.control-label {
+			text-align: right;
+		}
+	</style>
+</head>
+<body>
+	<nav class='navbar navbar-default'>
+	  <div class='container-fluid text-center'>
+	  	<span style='line-height: 50px;font-size: 1.2em;font-weight: bold;'>物联网云平台</span>
+	  </div>
+	</nav>
+	<div class='container'>
+		<form role='form' class='form-horizontal'>
+			<div class='panel panel-default'>
+			  <div class='panel-body'>
+				<h3>开关控制：</h3>
+				  <div class='form-group'>
+				  	<label for='' class='col-sm-6 col-xs-3 no-padding-right control-label' >风扇:</label>
+				  	<div class='col-sm-3 col-xs-9'>
+				  		<div class='col-sm-3 col-xs-6'>
+							<input type='checkbox' id="efan"/>
+				  		</div>
+				  	</div>
+				  </div>
+				  <div class='form-group'>
+				  	<label for='' class='col-sm-6 col-xs-3 no-padding-right control-label'>照明灯:</label>
+				  	<div class='col-sm-3 col-xs-9'>
+				  		<div class='col-sm-6 col-xs-6'>
+							<input type='checkbox' id="light"/>
+				  		</div>
+				  	</div>
+				  </div>
+				  <div class='form-group'>
+				  	<label for='' class='col-sm-6 col-xs-3 no-padding-right control-label'>板载LED:</label>
+				  	<div class='col-sm-3 col-xs-9'>
+				  		<div class='col-sm-6 col-xs-6'>
+							<input type='checkbox' id="led"/>
+				  		</div>
+				  	</div>
+				  </div>
+			  </div>
+			</div>
+		  <div class='form-group text-center'>
+		  		<button type='button' class='btn btn-primary' onclick='javascript:ajaxwrite()'>提交</button>
+		  </div>
+	</form>
+		<form role='form' class='form-horizontal'>
+			<div class='panel panel-default'>
+			  	<div class='panel-body'>
+					<div class='row'>
+						<div class='col-md-12'>
+						<h3>温湿度监控：</h3>
+							<div id='temperature_chart' style='min-height: 300px;'></div>
+							<div id='humidity_chart' style='min-height: 300px;'></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</form>
+	</div>
+	<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+	<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+	<script type="text/javascript" src="http://www.bootcss.com/p/bootstrap-switch/static/js/bootstrapSwitch.js"></script>
+	<script src="res/highcharts.js"></script>
+	<script type="text/javascript">
+		var jsondata = {
+			"efan":"",
+			"light":"",
+			"led":""
+		};
+		var efan_value = document.getElementById("efan");
+		var light_value = document.getElementById("light");
+		var led_value = document.getElementById("led");
+		function ajaxwrite(){
+			if(efan_value.checked){
+				jsondata.efan = 'open';
+			}
+			else{
+				jsondata.efan= 'close';
+			}
+			if(light_value.checked){
+				jsondata.light = 'open';
+			}
+			else{
+				jsondata.light = 'close';
+			}
+			if(led_value.checked){
+				jsondata.led = 'open';
+			}
+			else{
+				jsondata.led = 'close';
+			}
+			var stringObject = JSON.stringify(jsondata);
+			$.ajax({
+			type: 'POST',
+			url: 'phpwrite2.php',
+			data: stringObject,
+			success: function(){
+				alert('已完成');
+			}
+			});
+			}
+		function load(){
+            $.ajax({
+                type: 'GET',
+				url: 'status.json',
+				datatype:'jsonp',
+				cache:false,
+　　　　　　　　　 success: function(result){
+					result = JSON.parse(result);
+					if(result.efan == "open"){
+						efan_value.checked = true;
+					}
+					else{
+						efan_value.checked = false;
+					}
+					if(result.light == "open"){
+						light_value.checked = true;
+					}
+					else{
+						light_value.checked = false;
+					}
+					if(result.led == "open"){
+						led_value.checked = true;
+					}
+					else{
+						led_value.checked = false;
+					}
+				}
+            });
+		}
+		
+		Highcharts.setOptions({
+		    global: {
+		        useUTC: false
+		    }
+		});
+		function activeLastPointToolip(chart) {
+		    var points = chart.series[0].points;
+		    chart.tooltip.refresh(points[points.length -1]);
+		}
+		function randomNum(minNum,maxNum){ 
+			switch(arguments.length){ 
+				case 1: 
+					var temp = parseInt(Math.random()*minNum+1,10);
+					if(temp%2!==0){
+						temp = temp - 1;
+					} 
+					return temp;
+				break; 
+				case 2: 
+					var temp = parseInt(Math.random()*(maxNum-minNum+1)+minNum,10);
+					if(temp%2!==0){
+						temp = temp - 1;
+					} 
+					return temp; 
+				break; 
+					default: 
+						return 0; 
+					break; 
+			} 
+		}
+		$('#temperature_chart').highcharts({
+		    chart: {
+		        type: 'spline',
+		        animation: Highcharts.svg, // don't animate in old IE
+		        events: {
+		            load: function () {
+		                var series = this.series[0],
+		                    chart = this;
+		                setInterval(function () {
+		                    var x = (new Date()).getTime(), // current time
+								y = randomNum(2,6)*0.01 + 23;
+		                    series.addPoint([x, y], true, true);
+		                }, 5000);
+		            }
+		        }
+		    },
+		    title: {
+		        text: '温度'
+		    },
+		    xAxis: {
+		        type: 'datetime',
+		        tickPixelInterval: 150
+		    },
+		    yAxis: {
+		        title: {
+		            text: '温度'
+		        },
+		        plotLines: [{
+		            value: 0,
+		            width: 1,
+		            color: '#808080'
+		        }]
+		    },
+			plotOptions: { spline: { dataLabels: { enabled: true }, enableMouseTracking: true } },
+		    tooltip: {
+		        formatter: function () {
+		            return '<b>' + this.series.name + '</b><br/>' +
+		                Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+		                Highcharts.numberFormat(this.y, 2);
+		        }
+		    },
+		    legend: {
+		        enabled: false
+		    },
+		    exporting: {
+		        enabled: false
+		    },
+		    series: [{
+		        name: '温度',
+		        data: (function () {
+		            var data = [],
+		                time = (new Date()).getTime(),
+		                i;
+		            for (i = -5; i <= 0; i += 1) {
+		                data.push({
+		                    x: time + i * 5000,
+		                    y: randomNum(2,6)*0.01 + 23
+		                });
+		            }
+		            return data;
+		        }())
+		    }]
+		}, function(c) {
+		    activeLastPointToolip(c)
+		});
+		$('#humidity_chart').highcharts({
+		    chart: {
+		        type: 'spline',
+		        animation: Highcharts.svg, // don't animate in old IE
+		        events: {
+		            load: function () {
+		                var series = this.series[0],
+		                    chart = this;
+		                setInterval(function () {
+		                    var x = (new Date()).getTime(), // current time
+							y = randomNum(2,6)*0.01 + 52;
+		                    series.addPoint([x, y], true, true);
+		                }, 5000);
+		            }
+		        }
+		    },
+		    title: {
+		        text: '湿度'
+		    },
+		    xAxis: {
+		        type: 'datetime',
+		        tickPixelInterval: 150
+		    },
+		    yAxis: {
+		        title: {
+		            text: '湿度'
+		        },
+		        plotLines: [{
+		            value: 0,
+		            width: 1,
+		            color: '#808080'
+		        }]
+		    },
+			plotOptions: { spline: { dataLabels: { enabled: true }, enableMouseTracking: true } },
+		    tooltip: {
+		        formatter: function () {
+		            return '<b>' + this.series.name + '</b><br/>' +
+		                Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+		                Highcharts.numberFormat(this.y, 2);
+		        }
+		    },
+		    legend: {
+		        enabled: false
+		    },
+		    exporting: {
+		        enabled: false
+		    },
+		    series: [{
+		        name: '湿度',
+		        data: (function () {
+		            var data = [],
+		                time = (new Date()).getTime(),
+		                i;
+		            for (i = -5; i <= 0; i += 1) {
+		                data.push({
+		                    x: time + i * 5000,
+		                    y: randomNum(2,6)*0.01 + 52
+		                });
+		            }
+		            return data;
+		        }())
+		    }]
+		}, function(c) {
+		    activeLastPointToolip(c)
+		});
+	</script>
+<body onload="load()">
+</body>
+<footer>
+	<hr>
+	<div class='container'>
+	<div class='row'>
+	<div class='col-md-4'>
+	  <p> © 2018 AHNU毕设 </p>
+	Powered By Liuyuqi(刘玉琪)<br>
+	</div>
+	</div>
+	</div>
+	</footer>
+</html>
